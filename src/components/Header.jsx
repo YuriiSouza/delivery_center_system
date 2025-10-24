@@ -1,11 +1,21 @@
 import React, { useState, useEffect } from 'react';
-const { ipcRenderer } = window.require('electron');
 
 function Header({ activeTab, onTabChange }) {
   const [version, setVersion] = useState('');
 
   useEffect(() => {
-    ipcRenderer.invoke('get-app-version').then(setVersion);
+    // ✅ CORRETO: Use window.electronAPI ao invés de window.require
+    if (window.electronAPI) {
+      window.electronAPI.getAppVersion()
+        .then(setVersion)
+        .catch(err => {
+          console.error('Erro ao obter versão:', err);
+          setVersion('1.0.0'); // Fallback
+        });
+    } else {
+      console.warn('electronAPI não disponível');
+      setVersion('1.0.0'); // Fallback
+    }
   }, []);
 
   return (
@@ -13,7 +23,7 @@ function Header({ activeTab, onTabChange }) {
       <div className="header-content">
         <div className="header-left">
           <h1 className="app-title">
-            📱 WhatsApp Automation
+            Delivery Center
           </h1>
           <span className="app-version">v{version}</span>
         </div>
@@ -44,4 +54,3 @@ function Header({ activeTab, onTabChange }) {
 }
 
 export default Header;
-

@@ -1,7 +1,7 @@
-const { Builder, By, Key, until } = require('selenium-webdriver');
-const chrome = require('selenium-webdriver/chrome');
-const path = require('path');
-const fs = require('fs');
+import { Builder, By, Key, until } from 'selenium-webdriver';
+import { Options } from 'selenium-webdriver/chrome.js';
+import { join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 
 class WhatsAppAutomation {
   constructor() {
@@ -17,14 +17,14 @@ class WhatsAppAutomation {
       onProgress?.('Configurando navegador...');
 
       // Configurar Chrome
-      const options = new chrome.Options();
+      const options = new Options();
       options.addArguments('--start-maximized');
       options.addArguments('--disable-blink-features=AutomationControlled');
 
       // Usar perfil persistente para manter sessão
-      const userDataDir = path.join(process.cwd(), 'perfil_chrome_wpp');
-      if (!fs.existsSync(userDataDir)) {
-        fs.mkdirSync(userDataDir, { recursive: true });
+      const userDataDir = join(process.cwd(), 'perfil_chrome_wpp');
+      if (!existsSync(userDataDir)) {
+        mkdirSync(userDataDir, { recursive: true });
       }
       options.addArguments(`--user-data-dir=${userDataDir}`);
 
@@ -179,5 +179,5 @@ class WhatsAppAutomation {
   }
 }
 
-module.exports = WhatsAppAutomation;
+export default WhatsAppAutomation;
 

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-const { ipcRenderer } = window.require('electron');
 
 function SendPanel({ addLog }) {
   const [config, setConfig] = useState(null);
@@ -10,23 +9,39 @@ function SendPanel({ addLog }) {
 
   useEffect(() => {
     loadConfig();
-    setupWhatsAppListener();
+    const cleanup = setupWhatsAppListener();
+    
+    // Cleanup quando o componente for desmontado
+    return () => {
+      cleanup?.();
+    };
   }, []);
 
   const loadConfig = async () => {
-    const cfg = await ipcRenderer.invoke('get-config');
-    setConfig(cfg);
+    try {
+      const cfg = await window.electronAPI.getConfig();
+      setConfig(cfg);
+    } catch (error) {
+      console.error('Erro ao carregar config:', error);
+      addLog?.('⚠️ Erro ao carregar configurações', 'warning');
+    }
   };
 
   const setupWhatsAppListener = () => {
-    ipcRenderer.on('whatsapp-progress', (event, data) => {
+    if (!window.electronAPI?.onWhatsappProgress) {
+      console.warn('onWhatsappProgress não disponível');
+      return;
+    }
+
+    // O listener retorna uma função de cleanup
+    return window.electronAPI.onWhatsappProgress((data) => {
       if (data.type === 'progress') {
         setProgress({ current: data.current, total: data.total });
-        addLog(`[${data.current}/${data.total}] ${data.phone}`, 'info');
+        addLog?.(`[${data.current}/${data.total}] ${data.phone}`, 'info');
       } else if (data.type === 'log') {
-        addLog(data.message, 'info');
+        addLog?.(data.message, 'info');
       } else if (data.type === 'init') {
-        addLog(data.message, 'info');
+        addLog?.(data.message, 'info');
       }
     });
   };
@@ -35,15 +50,15 @@ function SendPanel({ addLog }) {
     if (!config) return;
 
     setIsLoading(true);
-    addLog('📊 Carregando números da planilha...', 'info');
+    addLog?.('📊 Carregando números da planilha...', 'info');
 
     try {
       // Inicializar Google Sheets se necessário
       const credPath = 'credenciais.json';
-      await ipcRenderer.invoke('sheets-initialize', credPath);
+      await window.electronAPI.sheetsInitialize(credPath);
 
       // Obter números
-      const result = await ipcRenderer.invoke('sheets-get-phone-numbers', {
+      const result = await window.electronAPI.sheetsGetPhoneNumbers({
         spreadsheetId: config.spreadsheetId,
         sheetName: config.sheetName,
         column: config.phoneColumn,
@@ -51,12 +66,12 @@ function SendPanel({ addLog }) {
 
       if (result.success) {
         setPhoneNumbers(result.numbers);
-        addLog(`✅ ${result.numbers.length} número(s) encontrado(s)`, 'success');
+        addLog?.(`✅ ${result.numbers.length} número(s) encontrado(s)`, 'success');
       } else {
-        addLog(`❌ Erro: ${result.error}`, 'error');
+        addLog?.(`❌ Erro: ${result.error}`, 'error');
       }
     } catch (error) {
-      addLog(`❌ Erro: ${error.message}`, 'error');
+      addLog?.(`❌ Erro: ${error.message}`, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -64,7 +79,7 @@ function SendPanel({ addLog }) {
 
   const handleSend = async () => {
     if (!config || phoneNumbers.length === 0) {
-      addLog('❌ Configure a planilha e carregue os números primeiro', 'error');
+      addLog?.('❌ Configure a planilha e carregue os números primeiro', 'error');
       return;
     }
 
@@ -75,41 +90,43 @@ function SendPanel({ addLog }) {
     if (!confirm) return;
 
     setIsSending(true);
-    addLog('🚀 Iniciando envio de mensagens...', 'info');
+    addLog?.('🚀 Iniciando envio de mensagens...', 'info');
 
     try {
       // Inicializar WhatsApp
-      addLog('🌐 Inicializando WhatsApp Web...', 'info');
-      const initResult = await ipcRenderer.invoke('whatsapp-initialize');
+      addLog?.('🌐 Inicializando WhatsApp Web...', 'info');
+      // ✅ CORRETO: Use window.electronAPI
+      const initResult = await window.electronAPI.whatsappInitialize();
 
       if (!initResult.success) {
-        addLog(`❌ Erro ao inicializar: ${initResult.error}`, 'error');
+        addLog?.(`❌ Erro ao inicializar: ${initResult.error}`, 'error');
+        setIsSending(false);
         return;
       }
 
       // Enviar mensagens
-      const result = await ipcRenderer.invoke('whatsapp-send-bulk', {
+      const result = await window.electronAPI.whatsappSendBulk({
         phoneNumbers,
         message: config.message,
         delay: config.delay,
       });
 
       // Salvar no histórico
-      await ipcRenderer.invoke('save-history', {
-        total: result.total,
-        sent: result.sent,
-        failed: result.failed,
+      await window.electronAPI.saveHistory({
+        total: result.results.total,
+        sent: result.results.sent,
+        failed: result.results.failed,
         message: config.message,
       });
 
-      addLog('', 'info');
-      addLog('📊 RESUMO:', 'info');
-      addLog(`✅ Enviados: ${result.sent}`, 'success');
-      addLog(`❌ Falhas: ${result.failed}`, 'error');
-      addLog(`📱 Total: ${result.total}`, 'info');
+      addLog?.('', 'info');
+      addLog?.('📊 RESUMO:', 'info');
+      addLog?.(`✅ Enviados: ${result.results.sent}`, 'success');
+      addLog?.(`❌ Falhas: ${result.results.failed}`, 'error');
+      addLog?.(`📱 Total: ${result.results.total}`, 'info');
 
     } catch (error) {
-      addLog(`❌ Erro: ${error.message}`, 'error');
+      addLog?.(`❌ Erro: ${error.message}`, 'error');
     } finally {
       setIsSending(false);
       setProgress({ current: 0, total: 0 });
@@ -117,13 +134,26 @@ function SendPanel({ addLog }) {
   };
 
   const handleStop = async () => {
-    await ipcRenderer.invoke('whatsapp-stop');
-    addLog('⏹️ Envio interrompido', 'warning');
-    setIsSending(false);
+    try {
+      await window.electronAPI.whatsappStop();
+      addLog?.('⏹️ Envio interrompido', 'warning');
+    } catch (error) {
+      console.error('Erro ao parar envio:', error);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   if (!config) {
-    return <div className="panel">Carregando...</div>;
+    return (
+      <div className="panel">
+        <div className="panel-content">
+          <div className="loading-state">
+            ⏳ Carregando configurações...
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -173,7 +203,7 @@ function SendPanel({ addLog }) {
           )}
         </div>
 
-        {isSending && (
+        {isSending && progress.total > 0 && (
           <div className="progress-card">
             <h3>📊 Progresso</h3>
             <div className="progress-info">
@@ -221,4 +251,3 @@ function SendPanel({ addLog }) {
 }
 
 export default SendPanel;
-

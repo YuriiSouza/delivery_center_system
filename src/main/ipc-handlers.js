@@ -1,24 +1,28 @@
-const { ipcMain } = require('electron');
-const SheetsManager = require('./sheets');
-const WhatsAppAutomation = require('./whatsapp');
-const Store = require('electron-store');
-const path = require('path');
+// ===== IMPORTAÇÕES CORRIGIDAS =====
+import electron from 'electron';
+const { ipcMain, dialog, app } = electron;
 
-// Instâncias globais
+import log from 'electron-log';
+
+import SheetsManager from './sheets.js';
+import WhatsAppAutomation from './whatsapp.js';
+import Store from 'electron-store';
+
+// ===== CONFIGURAÇÃO DE LOG =====
+log.transports.file.level = 'info';
+log.transports.console.level = 'debug';
+
+// ===== INSTÂNCIAS GLOBAIS =====
 const sheetsManager = new SheetsManager();
 const whatsappAutomation = new WhatsAppAutomation();
-const store = new Store();
+const store = new Store({
+    encryptionKey: 'hiagpwe-gsdf-hsff'
+  });
 
 // ===== CONFIGURAÇÕES =====
 
 ipcMain.handle('get-config', () => {
-  return store.get('config', {
-    spreadsheetId: '',
-    sheetName: 'Visão Geral Atribuições',
-    phoneColumn: 'P',
-    message: 'Bom dia driver, tem convocação no seu app!',
-    delay: 3000,
-  });
+  return store.get('config');
 });
 
 ipcMain.handle('save-config', (event, config) => {
@@ -87,7 +91,6 @@ ipcMain.handle('whatsapp-status', () => {
 // ===== SISTEMA =====
 
 ipcMain.handle('select-file', async (event) => {
-  const { dialog } = require('electron');
   const result = await dialog.showOpenDialog({
     properties: ['openFile'],
     filters: [
@@ -129,9 +132,14 @@ ipcMain.handle('clear-history', () => {
   return { success: true };
 });
 
-module.exports = {
+
+
+ipcMain.handle('get-app-version', () => {
+  return app.getVersion();
+});
+
+export default {
   sheetsManager,
   whatsappAutomation,
   store,
 };
-

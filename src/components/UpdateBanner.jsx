@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-const { ipcRenderer } = window.require('electron');
 
 function UpdateBanner() {
   const [updateState, setUpdateState] = useState('idle');
@@ -7,56 +6,66 @@ function UpdateBanner() {
   const [downloadProgress, setDownloadProgress] = useState(0);
 
   useEffect(() => {
+    // Verifica se o electronAPI está disponível
+    if (!window.electronAPI) {
+      console.warn('electronAPI não disponível - UpdateBanner desabilitado');
+      return;
+    }
+
+    // ✅ CORRETO: Use window.electronAPI para listeners
     // Verificando atualizações
-    ipcRenderer.on('update-checking', () => {
+    const unsubCheckingUpdate = window.electronAPI.onUpdateChecking?.(() => {
       setUpdateState('checking');
     });
 
     // Atualização disponível
-    ipcRenderer.on('update-available', (event, info) => {
+    const unsubUpdateAvailable = window.electronAPI.onUpdateAvailable?.((info) => {
       setUpdateState('available');
       setUpdateInfo(info);
     });
 
     // Não há atualização
-    ipcRenderer.on('update-not-available', () => {
+    const unsubUpdateNotAvailable = window.electronAPI.onUpdateNotAvailable?.(() => {
       setUpdateState('idle');
     });
 
     // Progresso do download
-    ipcRenderer.on('update-download-progress', (event, progress) => {
+    const unsubDownloadProgress = window.electronAPI.onUpdateDownloadProgress?.((progress) => {
       setUpdateState('downloading');
       setDownloadProgress(Math.round(progress.percent));
     });
 
     // Download concluído
-    ipcRenderer.on('update-downloaded', (event, info) => {
+    const unsubUpdateDownloaded = window.electronAPI.onUpdateDownloaded?.((info) => {
       setUpdateState('downloaded');
       setUpdateInfo(info);
     });
 
     // Erro
-    ipcRenderer.on('update-error', (event, error) => {
+    const unsubUpdateError = window.electronAPI.onUpdateError?.((error) => {
       console.error('Erro na atualização:', error);
       setUpdateState('error');
     });
 
+    // Cleanup: Remove os listeners quando o componente for desmontado
     return () => {
-      ipcRenderer.removeAllListeners('update-checking');
-      ipcRenderer.removeAllListeners('update-available');
-      ipcRenderer.removeAllListeners('update-not-available');
-      ipcRenderer.removeAllListeners('update-download-progress');
-      ipcRenderer.removeAllListeners('update-downloaded');
-      ipcRenderer.removeAllListeners('update-error');
+      unsubCheckingUpdate?.();
+      unsubUpdateAvailable?.();
+      unsubUpdateNotAvailable?.();
+      unsubDownloadProgress?.();
+      unsubUpdateDownloaded?.();
+      unsubUpdateError?.();
     };
   }, []);
 
   const handleUpdate = () => {
-    ipcRenderer.send('restart-app');
+    // ✅ CORRETO: Use window.electronAPI
+    window.electronAPI.restartApp?.();
   };
 
   const handleCheckUpdates = () => {
-    ipcRenderer.send('check-for-updates');
+    // ✅ CORRETO: Use window.electronAPI
+    window.electronAPI.checkForUpdates?.();
   };
 
   if (updateState === 'checking') {
@@ -115,4 +124,3 @@ function UpdateBanner() {
 }
 
 export default UpdateBanner;
-

@@ -1,6 +1,6 @@
-const { google } = require('googleapis');
-const fs = require('fs');
-const path = require('path');
+import { google } from 'googleapis';
+import { readFileSync } from 'fs';
+import path from 'path';
 
 class SheetsManager {
   constructor() {
@@ -14,7 +14,7 @@ class SheetsManager {
   async initialize(credentialsPath) {
     try {
       // Ler credenciais
-      const credentials = JSON.parse(fs.readFileSync(credentialsPath, 'utf8'));
+      const credentials = JSON.parse(readFileSync(credentialsPath, 'utf8'));
 
       // Criar cliente de autenticação
       this.auth = new google.auth.GoogleAuth({
@@ -173,5 +173,5 @@ class SheetsManager {
   }
 }
 
-module.exports = SheetsManager;
+export default SheetsManager;
 

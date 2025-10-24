@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-const { ipcRenderer } = window.require('electron');
 
 function HistoryPanel() {
   const [history, setHistory] = useState([]);
@@ -11,7 +10,7 @@ function HistoryPanel() {
 
   const loadHistory = async () => {
     setIsLoading(true);
-    const hist = await ipcRenderer.invoke('get-history');
+    const hist = await window.electronAPI.getHistory();
     setHistory(hist);
     setIsLoading(false);
   };
@@ -19,7 +18,7 @@ function HistoryPanel() {
   const handleClearHistory = async () => {
     const confirm = window.confirm('Deseja limpar todo o histórico?');
     if (confirm) {
-      await ipcRenderer.invoke('clear-history');
+      await window.electronAPI.clearHistory();
       setHistory([]);
     }
   };

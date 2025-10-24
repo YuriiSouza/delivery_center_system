@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-const { ipcRenderer } = window.require('electron');
 
 function ConfigPanel({ addLog }) {
   const [config, setConfig] = useState({
@@ -17,8 +16,13 @@ function ConfigPanel({ addLog }) {
   }, []);
 
   const loadConfig = async () => {
-    const cfg = await ipcRenderer.invoke('get-config');
-    setConfig(cfg);
+    try {
+      const cfg = await window.electronAPI.getConfig();
+      setConfig(cfg);
+    } catch (error) {
+      console.error('Erro ao carregar config:', error);
+      addLog?.('⚠️ Erro ao carregar configurações', 'warning');
+    }
   };
 
   const handleChange = (field, value) => {
@@ -29,7 +33,8 @@ function ConfigPanel({ addLog }) {
     setIsSaving(true);
     
     try {
-      await ipcRenderer.invoke('save-config', config);
+      // ✅ CORRETO: Use window.electronAPI
+      await window.electronAPI.saveConfig(config);
       addLog('✅ Configurações salvas com sucesso!', 'success');
     } catch (error) {
       addLog(`❌ Erro ao salvar: ${error.message}`, 'error');
@@ -43,14 +48,17 @@ function ConfigPanel({ addLog }) {
 
     try {
       const credPath = 'credenciais.json';
-      const result = await ipcRenderer.invoke('sheets-initialize', credPath);
+      
+      // ✅ CORRETO: Use window.electronAPI
+      const result = await window.electronAPI.sheetsInitialize(credPath);
 
       if (result.success) {
         addLog('✅ Conexão com Google Sheets OK!', 'success');
         
         // Testar acesso à planilha
         if (config.spreadsheetId) {
-          const testResult = await ipcRenderer.invoke('sheets-get-data', {
+          // ✅ CORRETO: Use window.electronAPI
+          const testResult = await window.electronAPI.sheetsGetData({
             spreadsheetId: config.spreadsheetId,
             range: `${config.sheetName}!A1:A1`,
           });
@@ -174,4 +182,3 @@ function ConfigPanel({ addLog }) {
 }
 
 export default ConfigPanel;
-
