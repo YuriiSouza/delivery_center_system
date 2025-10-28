@@ -1,96 +1,177 @@
-import { Builder, By, Key, until } from 'selenium-webdriver';
-import { Options } from 'selenium-webdriver/chrome.js';
+import pkg from 'whatsapp-web.js';
+const { Client, LocalAuth } = pkg;
+import qrcode from 'qrcode-terminal';
 import { join } from 'path';
-import { existsSync, mkdirSync } from 'fs';
 
 class WhatsAppAutomation {
   constructor() {
-    this.driver = null;
+    this.client = null;
     this.isRunning = false;
+    this.shouldStop = false;
+    this.isReady = false;
   }
 
   /**
-   * Inicializar navegador
+   * Inicializar WhatsApp Web
    */
   async initialize(onProgress) {
-    try {
-      onProgress?.('Configurando navegador...');
+    return new Promise((resolve, reject) => {
+      try {
+        onProgress?.('Configurando WhatsApp Web...');
 
-      // Configurar Chrome
-      const options = new Options();
-      options.addArguments('--start-maximized');
-      options.addArguments('--disable-blink-features=AutomationControlled');
+        // Criar cliente com autenticação local (salva sessão)
+        this.client = new Client({
+          authStrategy: new LocalAuth({
+            clientId: 'delivery-central-system',
+            dataPath: join(process.cwd(), '.wwebjs_auth')
+          }),
+          puppeteer: {
+            headless: false, // Mostra o navegador
+            args: [
+              '--no-sandbox',
+              '--disable-setuid-sandbox',
+              '--disable-dev-shm-usage',
+              '--disable-accelerated-2d-canvas',
+              '--no-first-run',
+              '--no-zygote',
+              '--disable-gpu'
+            ]
+          }
+        });
 
-      // Usar perfil persistente para manter sessão
-      const userDataDir = join(process.cwd(), 'perfil_chrome_wpp');
-      if (!existsSync(userDataDir)) {
-        mkdirSync(userDataDir, { recursive: true });
+        // Evento: QR Code gerado
+        this.client.on('qr', (qr) => {
+          console.log('📱 QR Code gerado!');
+          onProgress?.('📱 Escaneie o QR Code no navegador que abriu');
+          
+          // Mostrar QR code no terminal também
+          qrcode.generate(qr, { small: true });
+        });
+
+        // Evento: Autenticando
+        this.client.on('authenticated', () => {
+          console.log('✅ Autenticado!');
+          onProgress?.('✅ Autenticado com sucesso!');
+        });
+
+        // Evento: Falha na autenticação
+        this.client.on('auth_failure', (msg) => {
+          console.error('❌ Falha na autenticação:', msg);
+          onProgress?.('❌ Falha na autenticação. Tente novamente.');
+          reject(new Error('Falha na autenticação'));
+        });
+
+        // Evento: Cliente pronto
+        this.client.on('ready', () => {
+          console.log('🚀 WhatsApp Web está pronto!');
+          this.isReady = true;
+          this.isRunning = true;
+          onProgress?.('🚀 WhatsApp Web conectado e pronto!');
+          resolve({ success: true });
+        });
+
+        // Evento: Desconectado
+        this.client.on('disconnected', (reason) => {
+          console.log('⚠️ WhatsApp desconectado:', reason);
+          this.isReady = false;
+          this.isRunning = false;
+          onProgress?.('⚠️ WhatsApp desconectado');
+        });
+
+        // Inicializar cliente
+        onProgress?.('Inicializando WhatsApp Web...');
+        this.client.initialize();
+
+      } catch (error) {
+        console.error('Erro ao inicializar WhatsApp:', error);
+        reject({ success: false, error: error.message });
       }
-      options.addArguments(`--user-data-dir=${userDataDir}`);
-
-      onProgress?.('Abrindo WhatsApp Web...');
-
-      // Criar driver
-      this.driver = await new Builder()
-        .forBrowser('chrome')
-        .setChromeOptions(options)
-        .build();
-
-      // Abrir WhatsApp Web
-      await this.driver.get('https://web.whatsapp.com/');
-
-      onProgress?.('Aguardando WhatsApp carregar...');
-
-      // Aguardar carregar (até 3 minutos para escanear QR code)
-      await this.driver.wait(
-        until.elementLocated(By.css('[data-testid="chat-list"]')),
-        180000
-      );
-
-      onProgress?.('WhatsApp Web carregado!');
-
-      return { success: true };
-    } catch (error) {
-      console.error('Erro ao inicializar WhatsApp:', error);
-      return { success: false, error: error.message };
-    }
+    });
   }
+
+  /**
+   * Formatar número de telefone
+   */
+formatPhoneNumber(phoneNumber) {
+  console.log('\n=== FORMATANDO NÚMERO ===');
+  console.log('📞 Entrada:', phoneNumber);
+  
+  // Converter para string e remover tudo que não é número
+  let cleaned = String(phoneNumber).replace(/\D/g, '');
+  console.log('🧹 Limpo:', cleaned);
+  console.log('📏 Tamanho:', cleaned.length);
+  
+  // Remover código do país se já tiver (55)
+  if (cleaned.startsWith('55')) {
+    cleaned = cleaned.substring(2);
+    console.log('🌍 Removeu código país:', cleaned);
+  }
+  
+  // Verificar tamanho do número
+  // DDD (2 dígitos) + Celular (9 dígitos) = 11 dígitos
+  // DDD (2 dígitos) + Fixo (8 dígitos) = 10 dígitos
+  
+  if (cleaned.length === 11) {
+    // Celular: DDD + 9XXXXXXXX
+    console.log('📱 Tipo: Celular (11 dígitos)');
+  } else if (cleaned.length === 10) {
+    // Fixo: DDD + XXXXXXXX
+    console.log('📞 Tipo: Fixo (10 dígitos)');
+  } else if (cleaned.length === 9) {
+    // Pode ser celular sem DDD - ERRO!
+    console.warn('⚠️ ATENÇÃO: Número com 9 dígitos - falta DDD!');
+    throw new Error(`Número inválido (falta DDD): ${phoneNumber}`);
+  } else if (cleaned.length === 8) {
+    // Pode ser fixo sem DDD - ERRO!
+    console.warn('⚠️ ATENÇÃO: Número com 8 dígitos - falta DDD!');
+    throw new Error(`Número inválido (falta DDD): ${phoneNumber}`);
+  } else {
+    console.error('❌ Tamanho inválido:', cleaned.length);
+    throw new Error(`Número com tamanho inválido: ${phoneNumber} (${cleaned.length} dígitos)`);
+  }
+  
+  // Adicionar código do país (55)
+  const withCountryCode = '55' + cleaned;
+  console.log('🌍 Com código país:', withCountryCode);
+  
+  // Criar chatId
+  const chatId = withCountryCode + '@c.us';
+  console.log('💬 ChatId final:', chatId);
+  console.log('========================\n');
+  
+  return chatId;
+}
 
   /**
    * Enviar mensagem para um número
    */
   async sendMessage(phoneNumber, message, onProgress) {
     try {
-      if (!this.driver) {
-        throw new Error('WhatsApp não inicializado');
+      if (!this.client || !this.isReady) {
+        throw new Error('WhatsApp não está pronto. Inicialize primeiro.');
       }
 
       onProgress?.(`Enviando para ${phoneNumber}...`);
 
-      // Abrir conversa
-      const url = `https://web.whatsapp.com/send?phone=${phoneNumber}&text=${encodeURIComponent(message)}`;
-      await this.driver.get(url);
+      // Formatar número
+      const chatId = this.formatPhoneNumber(phoneNumber);
 
-      // Aguardar caixa de texto
-      await this.driver.wait(
-        until.elementLocated(By.css('[data-testid="conversation-compose-box-input"]')),
-        30000
-      );
+      // Verificar se o número existe no WhatsApp
+      const isRegistered = await this.client.isRegisteredUser(chatId);
+      
+      if (!isRegistered) {
+        throw new Error('Número não possui WhatsApp');
+      }
 
-      await this.sleep(2000);
-
-      // Enviar mensagem (pressionar Enter)
-      const inputBox = await this.driver.findElement(
-        By.css('[data-testid="conversation-compose-box-input"]')
-      );
-      await inputBox.sendKeys(Key.RETURN);
+      // Enviar mensagem
+      await this.client.sendMessage(chatId, message);
 
       onProgress?.(`✅ Enviado para ${phoneNumber}`);
 
       return { success: true };
     } catch (error) {
       console.error(`Erro ao enviar para ${phoneNumber}:`, error);
-      onProgress?.(`❌ Falhou: ${phoneNumber}`);
+      onProgress?.(`❌ Falhou: ${phoneNumber} - ${error.message}`);
       return { success: false, error: error.message };
     }
   }
@@ -106,11 +187,20 @@ class WhatsAppAutomation {
       errors: [],
     };
 
-    this.isRunning = true;
+    if (!this.client || !this.isReady) {
+      return {
+        success: false,
+        error: 'WhatsApp não está pronto',
+        results
+      };
+    }
 
-    for (let i = 0; i < phoneNumbers.length && this.isRunning; i++) {
+    this.shouldStop = false;
+
+    for (let i = 0; i < phoneNumbers.length && !this.shouldStop; i++) {
       const phone = phoneNumbers[i];
 
+      // Notificar progresso
       onProgress?.({
         type: 'progress',
         current: i + 1,
@@ -118,6 +208,7 @@ class WhatsAppAutomation {
         phone,
       });
 
+      // Enviar mensagem
       const result = await this.sendMessage(phone, message, (msg) => {
         onProgress?.({ type: 'log', message: msg });
       });
@@ -129,30 +220,33 @@ class WhatsAppAutomation {
         results.errors.push({ phone, error: result.error });
       }
 
-      // Delay entre mensagens
-      if (i < phoneNumbers.length - 1) {
+      // Delay entre mensagens (evita bloqueio)
+      if (i < phoneNumbers.length - 1 && !this.shouldStop) {
         await this.sleep(delay);
       }
     }
 
-    return results;
+    return { success: true, results };
   }
 
   /**
    * Parar execução
    */
   stop() {
-    this.isRunning = false;
+    this.shouldStop = true;
+    console.log('⏹️ Parando envio de mensagens...');
   }
 
   /**
-   * Fechar navegador
+   * Fechar WhatsApp
    */
   async close() {
     try {
-      if (this.driver) {
-        await this.driver.quit();
-        this.driver = null;
+      if (this.client) {
+        await this.client.destroy();
+        this.client = null;
+        this.isReady = false;
+        this.isRunning = false;
       }
       return { success: true };
     } catch (error) {
@@ -162,12 +256,13 @@ class WhatsAppAutomation {
   }
 
   /**
-   * Verificar se está rodando
+   * Verificar status
    */
   getStatus() {
     return {
       isRunning: this.isRunning,
-      isInitialized: this.driver !== null,
+      isReady: this.isReady,
+      isInitialized: this.client !== null,
     };
   }
 
@@ -180,4 +275,3 @@ class WhatsAppAutomation {
 }
 
 export default WhatsAppAutomation;
-
