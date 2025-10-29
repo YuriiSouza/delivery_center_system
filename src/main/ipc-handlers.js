@@ -132,6 +132,64 @@ ipcMain.handle('clear-history', () => {
   return { success: true };
 });
 
+// Login no portal
+ipcMain.handle('portal-login', async () => {
+  try {
+    // Aqui você implementa o login com Selenium/Puppeteer
+    // Exemplo:
+    // await driver.get('https://portal.exemplo.com' );
+    // await driver.findElement(By.id('username')).sendKeys('usuario');
+    // await driver.findElement(By.id('password')).sendKeys('senha');
+    // await driver.findElement(By.id('login-btn')).click();
+    
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Baixar relatório
+ipcMain.handle('download-report', async (event, reportId) => {
+  try {
+    // Aqui você navega até a página do relatório e baixa
+    // Exemplo:
+    // await driver.get(`https://portal.exemplo.com/relatorios/${reportId}` );
+    // await driver.findElement(By.id('download-btn')).click();
+    // await sleep(5000); // Aguardar download
+    
+    const filePath = `/caminho/para/downloads/${reportId}.xlsx`;
+    
+    return { success: true, filePath };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Enviar para Google Sheets
+ipcMain.handle('upload-report-to-sheets', async (event, params) => {
+  try {
+    const { reportId, filePath } = params;
+    
+    // Aqui você lê o arquivo e envia para o Sheets
+    // Exemplo:
+    // const data = await readExcelFile(filePath);
+    // await sheetsManager.updateData({
+    //   spreadsheetId: 'seu-spreadsheet-id',
+    //   range: `${reportId}!A1`,
+    //   values: data
+    // });
+    
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Parar atualização
+ipcMain.handle('stop-report-update', async () => {
+  // Implementar lógica de parada
+  return { success: true };
+});
 
 
 ipcMain.handle('get-app-version', () => {

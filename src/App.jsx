@@ -5,10 +5,12 @@ import ConfigPanel from './components/ConfigPanel';
 import SendPanel from './components/SendPanel';
 import LogPanel from './components/LogPanel';
 import HistoryPanel from './components/HistoryPanel';
+
 import './styles/App.css';
+import UpdatePanel from './components/UpdatePanel';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('send'); // send, history, config
+  const [activeTab, setActiveTab] = useState('update'); // send, history, config
   const [logs, setLogs] = useState([]);
 
   const addLog = (message, type = 'info') => {
@@ -26,6 +28,10 @@ function App() {
       <Header activeTab={activeTab} onTabChange={setActiveTab} />
       
       <main className="main-content">
+        {activeTab === 'update' && (
+          <UpdatePanel addLog={addLog} />
+        )}
+
         {activeTab === 'send' && (
           <SendPanel addLog={addLog} />
         )}

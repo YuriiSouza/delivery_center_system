@@ -30,6 +30,13 @@ function Header({ activeTab, onTabChange }) {
 
         <nav className="header-nav">
           <button
+            className={`nav-button ${activeTab === 'update' ? 'active' : ''}`}
+            onClick={() => onTabChange('update')}
+          >
+            🔄️ Atualizar Planilha
+          </button>
+
+          <button
             className={`nav-button ${activeTab === 'send' ? 'active' : ''}`}
             onClick={() => onTabChange('send')}
           >

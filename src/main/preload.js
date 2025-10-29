@@ -34,4 +34,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveHistory: (historyItem) => ipcRenderer.invoke('save-history', historyItem),
   getHistory: () => ipcRenderer.invoke('get-history'),
   clearHistory: () => ipcRenderer.invoke('clear-history'),
+
+  // Atualização Relatorios
+  portalLogin: () => ipcRenderer.invoke('portal-login'),
+  downloadReport: (reportId) => ipcRenderer.invoke('download-report', reportId),
+  uploadReportToSheets: (params) => ipcRenderer.invoke('upload-report-to-sheets', params),
+  stopReportUpdate: () => ipcRenderer.invoke('stop-report-update'),
 });
