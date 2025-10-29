@@ -7,6 +7,7 @@ import log from 'electron-log';
 import SheetsManager from './sheets.js';
 import WhatsAppAutomation from './whatsapp.js';
 import Store from 'electron-store';
+import UpdateReports from './reports.js';
 
 // ===== CONFIGURAÇÃO DE LOG =====
 log.transports.file.level = 'info';
@@ -18,6 +19,7 @@ const whatsappAutomation = new WhatsAppAutomation();
 const store = new Store({
     encryptionKey: 'hiagpwe-gsdf-hsff'
   });
+const reports = new UpdateReports(spreadsheetId);
 
 // ===== CONFIGURAÇÕES =====
 
@@ -132,15 +134,13 @@ ipcMain.handle('clear-history', () => {
   return { success: true };
 });
 
+
+// ===== Relatorios =====
+
 // Login no portal
 ipcMain.handle('portal-login', async () => {
   try {
-    // Aqui você implementa o login com Selenium/Puppeteer
-    // Exemplo:
-    // await driver.get('https://portal.exemplo.com' );
-    // await driver.findElement(By.id('username')).sendKeys('usuario');
-    // await driver.findElement(By.id('password')).sendKeys('senha');
-    // await driver.findElement(By.id('login-btn')).click();
+    return UpdateReports
     
     return { success: true };
   } catch (error) {

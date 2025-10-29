@@ -1,8 +1,3 @@
-2025/10/29-12:07:07.950 1ae4 Reusing MANIFEST C:\Users\SPXBR31677\Documents\git\delivery_central_system\.wwebjs_auth\session-delivery-central-system\Default\Local Storage\leveldb/MANIFEST-000001
-2025/10/29-12:07:07.953 1ae4 Recovering log #12
-2025/10/29-12:07:07.953 1ae4 Level-0 table #14: started
-2025/10/29-12:07:07.958 1ae4 Level-0 table #14: 15373 bytes OK
-2025/10/29-12:07:07.959 1ae4 Recovering log #14
-2025/10/29-12:07:07.960 1ae4 Reusing old log C:\Users\SPXBR31677\Documents\git\delivery_central_system\.wwebjs_auth\session-delivery-central-system\Default\Local Storage\leveldb/000014.log 
-2025/10/29-12:07:07.962 1ae4 Delete type=0 #12
-2025/10/29-12:07:07.963 1ae4 Delete type=2 #15
+2025/10/29-12:50:41.388 6e4c Reusing MANIFEST C:\Users\SPXBR31677\Documents\git\delivery_central_system\.wwebjs_auth\session-delivery-central-system\Default\Local Storage\leveldb/MANIFEST-000001
+2025/10/29-12:50:41.392 6e4c Recovering log #14
+2025/10/29-12:50:41.395 6e4c Reusing old log C:\Users\SPXBR31677\Documents\git\delivery_central_system\.wwebjs_auth\session-delivery-central-system\Default\Local Storage\leveldb/000014.log 

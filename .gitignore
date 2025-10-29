@@ -36,3 +36,5 @@ credenciais.json
 perfil_chrome_wpp/
 
 credenciais.json
+
+.wwebjs*
