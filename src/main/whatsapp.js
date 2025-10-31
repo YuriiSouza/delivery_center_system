@@ -92,139 +92,155 @@ class WhatsAppAutomation {
   /**
    * Formatar número de telefone
    */
-formatPhoneNumber(phoneNumber) {
-  console.log('\n=== FORMATANDO NÚMERO ===');
-  console.log('📞 Entrada:', phoneNumber);
-  
-  // Converter para string e remover tudo que não é número
-  phoneNumber = String(phoneNumber).replace(/\D/g, '');
-  console.log('🧹 Limpo:', phoneNumber);
+  formatPhoneNumber(phoneNumber) {
+    console.log('\n=== FORMATANDO NÚMERO ===');
+    console.log('📞 Entrada:', phoneNumber);
+    
+    // Converter para string e remover tudo que não é número
+    phoneNumber = String(phoneNumber).replace(/\D/g, '');
+    console.log('🧹 Limpo:', phoneNumber);
 
-  // Remover código do país se já tiver (55)
-  if (phoneNumber.startsWith('55')) {
-    phoneNumber = phoneNumber.substring(2);
-    console.log('🌍 Removeu código país:', phoneNumber);
+    // Remover código do país se já tiver (55)
+    if (phoneNumber.startsWith('55')) {
+      phoneNumber = phoneNumber.substring(2);
+      console.log('🌍 Removeu código país:', phoneNumber);
+    }
+
+    // Verificar tamanho
+    if (phoneNumber.length === 11) {
+      console.log('📱 Tipo: Celular (11 dígitos)');
+    } else if (phoneNumber.length === 10) {
+      console.log('☎️ Tipo: Fixo (10 dígitos)');
+    } else {
+      console.error('❌ Tamanho inválido:', phoneNumber.length);
+      throw new Error(`Número com tamanho inválido: ${phoneNumber} (${phoneNumber.length} dígitos)`);
+    }
+
+    // Adicionar código do país (55)
+    const withCountryCode = '55' + phoneNumber;
+    console.log('🌍 Com código país:', withCountryCode);
+    
+    // Criar chatId
+    const chatId = withCountryCode + '@c.us';
+    console.log('💬 ChatId final:', chatId);
+    console.log('========================\n');
+    
+    return chatId;
   }
-
-  // Verificar tamanho
-  if (phoneNumber.length === 11) {
-    console.log('📱 Tipo: Celular (11 dígitos)');
-  } else if (phoneNumber.length === 10) {
-    console.log('☎️ Tipo: Fixo (10 dígitos)');
-  } else {
-    console.error('❌ Tamanho inválido:', phoneNumber.length);
-    throw new Error(`Número com tamanho inválido: ${phoneNumber} (${phoneNumber.length} dígitos)`);
-  }
-
-  // Adicionar código do país (55)
-  const withCountryCode = '55' + phoneNumber;
-  console.log('🌍 Com código país:', withCountryCode);
-  
-  // Criar chatId
-  const chatId = withCountryCode + '@c.us';
-  console.log('💬 ChatId final:', chatId);
-  console.log('========================\n');
-  
-  return chatId;
-}
 
   /**
    * Enviar mensagem para um número
    */
-/**
- * Enviar mensagem para um número
- */
-async sendMessage(phoneNumber, message, onProgress) {
-  try {
-    if (!this.client || !this.isReady) {
-      throw new Error('WhatsApp não está pronto. Inicialize primeiro.');
-    }
-
-    onProgress?.(`Enviando para ${phoneNumber}...`);
-
-    // Formata o número base
-    let baseChatId = this.formatPhoneNumber(phoneNumber);
-
-    // Extrai DDD e número (sem código país)
-    const match = baseChatId.match(/^55(\d{2})(\d{8,9})@c\.us$/);
-    if (!match) throw new Error(`Formato de número inválido: ${phoneNumber}`);
-
-    const ddd = match[1];
-    let numero = match[2];
-
-    // Cria as duas variações possíveis
-    const possibleIds = [];
-
-    if (numero.length === 9) {
-      // Já tem o 9, tenta primeiro com 9 e depois sem
-      possibleIds.push(`55${ddd}${numero}@c.us`);
-      possibleIds.push(`55${ddd}${numero.substring(1)}@c.us`);
-    } else if (numero.length === 8) {
-      // Não tem o 9, tenta primeiro sem e depois com 9
-      possibleIds.push(`55${ddd}${numero}@c.us`);
-      possibleIds.push(`55${ddd}9${numero}@c.us`);
-    }
-
-    let chatIdToUse = null;
-
-    // Testa qual versão realmente tem WhatsApp
-    for (const id of possibleIds) {
-      const exists = await this.client.isRegisteredUser(id);
-      if (exists) {
-        chatIdToUse = id;
-        break;
+  async sendMessage(phoneNumber, message, onProgress) {
+    try {
+      if (!this.client || !this.isReady) {
+        throw new Error('WhatsApp não está pronto. Inicialize primeiro.');
       }
+
+      onProgress?.(`Enviando para ${phoneNumber}...`);
+
+      // Formata o número base
+      let baseChatId = this.formatPhoneNumber(phoneNumber);
+
+      // Extrai DDD e número (sem código país)
+      const match = baseChatId.match(/^55(\d{2})(\d{8,9})@c\.us$/);
+      if (!match) throw new Error(`Formato de número inválido: ${phoneNumber}`);
+
+      const ddd = match[1];
+      let numero = match[2];
+
+      // Cria as duas variações possíveis
+      const possibleIds = [];
+
+      if (numero.length === 9) {
+        // Já tem o 9, tenta primeiro com 9 e depois sem
+        possibleIds.push(`55${ddd}${numero}@c.us`);
+        possibleIds.push(`55${ddd}${numero.substring(1)}@c.us`);
+      } else if (numero.length === 8) {
+        // Não tem o 9, tenta primeiro sem e depois com 9
+        possibleIds.push(`55${ddd}${numero}@c.us`);
+        possibleIds.push(`55${ddd}9${numero}@c.us`);
+      }
+
+      let chatIdToUse = null;
+
+      // Testa qual versão realmente tem WhatsApp
+      for (const id of possibleIds) {
+        const exists = await this.client.isRegisteredUser(id);
+        if (exists) {
+          chatIdToUse = id;
+          break;
+        }
+      }
+
+      if (!chatIdToUse) {
+        throw new Error('Nenhuma versão do número possui WhatsApp.');
+      }
+
+      // 📤 Enviar mensagem
+      const msg = await this.client.sendMessage(chatIdToUse, message);
+      onProgress?.(`✅ Enviado com sucesso para ${phoneNumber}`);
+      return { success: true, id: msg.id.id, chatId: chatIdToUse };
+
+    } catch (error) {
+      console.error(`Erro ao enviar para ${phoneNumber}:`, error);
+      onProgress?.(`❌ Falhou: ${phoneNumber} - ${error.message}`);
+      return { success: false, error: error.message };
     }
-
-    if (!chatIdToUse) {
-      throw new Error('Nenhuma versão do número possui WhatsApp.');
-    }
-
-    // 📤 Enviar mensagem
-    const msg = await this.client.sendMessage(chatIdToUse, message);
-    onProgress?.(`✅ Enviado com sucesso para ${phoneNumber}`);
-    return { success: true, id: msg.id.id, chatId: chatIdToUse };
-
-  } catch (error) {
-    console.error(`Erro ao enviar para ${phoneNumber}:`, error);
-    onProgress?.(`❌ Falhou: ${phoneNumber} - ${error.message}`);
-    return { success: false, error: error.message };
   }
-}
 
   /**
    * Enviar mensagens para múltiplos números
    */
-async sendMessage(phoneNumber, message, onProgress) {
-  try {
+  async sendBulkMessages(phoneNumbers, message, delay = 3000, onProgress) {
+    const results = {
+      total: phoneNumbers.length,
+      sent: 0,
+      failed: 0,
+      errors: [],
+    };
+
     if (!this.client || !this.isReady) {
-      throw new Error('WhatsApp não está pronto. Inicialize primeiro.');
+      return {
+        success: false,
+        error: 'WhatsApp não está pronto',
+        results
+      };
     }
 
-    onProgress?.(`Enviando para ${phoneNumber}...`);
+    this.shouldStop = false;
 
-    // Formatar número
-    const chatId = this.formatPhoneNumber(phoneNumber);
+    for (let i = 0; i < phoneNumbers.length && !this.shouldStop; i++) {
+      const phone = phoneNumbers[i];
 
-    // Verificar se o número existe no WhatsApp
-    const isRegistered = await this.client.isRegisteredUser(chatId);
-    
-    if (!isRegistered) {
-      throw new Error('Número não possui WhatsApp');
+      // Notificar progresso
+      onProgress?.({
+        type: 'progress',
+        current: i + 1,
+        total: phoneNumbers.length,
+        phone,
+      });
+
+      // Enviar mensagem
+      const result = await this.sendMessage(phone, message, (msg) => {
+        onProgress?.({ type: 'log', message: msg });
+      });
+
+      if (result.success) {
+        results.sent++;
+      } else {
+        results.failed++;
+        results.errors.push({ phone, error: result.error });
+      }
+
+      // Delay entre mensagens (evita bloqueio)
+      if (i < phoneNumbers.length - 1 && !this.shouldStop) {
+        await this.sleep(delay);
+      }
     }
 
-    // Enviar mensagem
-    await this.client.sendMessage(chatId, message);
-
-    onProgress?.(`✅ Enviado para ${phoneNumber}`);
-    return { success: true };
-
-  } catch (error) {
-    console.error(`Erro ao enviar para ${phoneNumber}:`, error);
-    onProgress?.(`❌ Falhou: ${phoneNumber} - ${error.message}`);
-    return { success: false, error: error.message };
+    return { success: true, results };
   }
-}
 
   /**
    * Parar execução

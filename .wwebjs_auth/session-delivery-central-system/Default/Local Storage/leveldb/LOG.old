@@ -1,8 +1,14 @@
-2025/10/29-12:07:07.950 1ae4 Reusing MANIFEST C:\Users\SPXBR31677\Documents\git\delivery_central_system\.wwebjs_auth\session-delivery-central-system\Default\Local Storage\leveldb/MANIFEST-000001
-2025/10/29-12:07:07.953 1ae4 Recovering log #12
-2025/10/29-12:07:07.953 1ae4 Level-0 table #14: started
-2025/10/29-12:07:07.958 1ae4 Level-0 table #14: 15373 bytes OK
-2025/10/29-12:07:07.959 1ae4 Recovering log #14
-2025/10/29-12:07:07.960 1ae4 Reusing old log C:\Users\SPXBR31677\Documents\git\delivery_central_system\.wwebjs_auth\session-delivery-central-system\Default\Local Storage\leveldb/000014.log 
-2025/10/29-12:07:07.962 1ae4 Delete type=0 #12
-2025/10/29-12:07:07.963 1ae4 Delete type=2 #15
+2025/10/31-10:35:37.703 7780 Reusing MANIFEST C:\Users\SPXBR31677\Documents\git\delivery_central_system\.wwebjs_auth\session-delivery-central-system\Default\Local Storage\leveldb/MANIFEST-000001
+2025/10/31-10:35:37.705 7780 Recovering log #14
+2025/10/31-10:35:37.706 7780 Level-0 table #16: started
+2025/10/31-10:35:37.710 7780 Level-0 table #16: 16974 bytes OK
+2025/10/31-10:35:37.713 7780 Delete type=0 #14
+2025/10/31-10:35:37.715 434c Compacting 4@0 + 1@1 files
+2025/10/31-10:35:37.721 434c Generated table #18@0: 134 keys, 7111 bytes
+2025/10/31-10:35:37.721 434c Compacted 4@0 + 1@1 files => 7111 bytes
+2025/10/31-10:35:37.722 434c compacted to: files[ 0 1 1 0 0 0 0 ]
+2025/10/31-10:35:37.724 434c Delete type=2 #7
+2025/10/31-10:35:37.724 434c Delete type=2 #10
+2025/10/31-10:35:37.724 434c Delete type=2 #12
+2025/10/31-10:35:37.724 434c Delete type=2 #14
+2025/10/31-10:35:37.724 434c Delete type=2 #16

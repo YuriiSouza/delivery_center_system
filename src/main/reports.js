@@ -3,7 +3,7 @@ import chrome from 'selenium-webdriver/chrome.js';
 import fs from 'fs';
 import path from 'path';
 import xlsx from 'xlsx';
-
+import SheetsManager from './sheets.js';
 /**
  * Classe responsável por:
  * - Acessar o sistema web com Selenium
